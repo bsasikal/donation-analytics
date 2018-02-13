@@ -5,7 +5,7 @@ import collections
 from datetime import datetime as dt
 from collections import defaultdict
 
-contrib_rec = collections.defaultdict(dict)
+donor_rec = collections.defaultdict(dict)
 recep_rec = defaultdict(list)
 
 input_file_path = None
@@ -17,15 +17,8 @@ percentile_list=[]
 
 # percentile_calc
 def calc_percentile(percentile_list):
-    global tmp_percentile
 
-    for values in percentile_file:
-        try:
-            tmp_percentile = int(values)
-        except ValueError:
-            print "percentile value has to be a whole number"
-
-    if percentile_list and tmp_percentile > 0 and tmp_percentile <= 100 :
+    if percentile_list:
         percentile_list.sort()
 
         calc_perc = (float(tmp_percentile) / 100) * len(percentile_list)
@@ -51,7 +44,6 @@ def parse_record_and_validate(line):
         try:
             datetime.datetime.strptime(tokens[13], '%m%d%Y')
         except ValueError:
-            print "Incorrect Date Format"
             return {}
 
         record["CMTE_ID"] = tokens[0]
@@ -71,16 +63,14 @@ def calc_donation_analytics(record):
         Name_Zip = record["NAME"] + "|" + record["ZIPCODE"]
         Recep_Zip_Year = record["CMTE_ID"] + "|" + record["ZIPCODE"] + "|" + record["TRANSACTION_DATE"]
 
-        if contrib_rec.has_key(Name_Zip):
+        if donor_rec.has_key(Name_Zip):
 
             #repeat_donors - donors who has contributed more than once in consecutive years
-            if record["TRANSACTION_DATE"] > (contrib_rec[Name_Zip].keys()[0]):
-                contrib_rec[Name_Zip][record["TRANSACTION_DATE"]] = "Y"
-#            else:
-#                contrib_rec[Name_Zip][record["TRANSACTION_DATE"]] = "N"
+            if record["TRANSACTION_DATE"] > (donor_rec[Name_Zip].keys()[0]):
+                donor_rec[Name_Zip][record["TRANSACTION_DATE"]] = "Y"
 
             #If the donor is a repeat donor and is contributing more than once in current year
-            if record["TRANSACTION_DATE"] >= contrib_rec[Name_Zip].keys()[0] and (contrib_rec[Name_Zip][record["TRANSACTION_DATE"]] == "Y"):
+            if record["TRANSACTION_DATE"] >= donor_rec[Name_Zip].keys()[0] and (donor_rec[Name_Zip][record["TRANSACTION_DATE"]] == "Y"):
                 recep_rec[Recep_Zip_Year].append(Tmp_Donation)
 
                 num_contrib = 0
@@ -95,9 +85,7 @@ def calc_donation_analytics(record):
 
                 outfile.write(Recep_Zip_Year + "|" + str(calc_perc) + "|" + str(total_donation) + "|" + str(num_contrib) + "\n")
         else:
-            contrib_rec[Name_Zip][record["TRANSACTION_DATE"]] = "N"
-
-        #print contrib_rec
+            donor_rec[Name_Zip][record["TRANSACTION_DATE"]] = "N"
 
 def read_input_file():
 #   iterate through input file, line by line
@@ -115,6 +103,9 @@ def main():
     global input_file_path
     global outfile
     global percentile_file
+    global tmp_percentile
+
+    print "application started " + str(dt.now())
 
     if len(sys.argv) != 4:
         print len(sys.argv)
@@ -126,12 +117,18 @@ def main():
     output_file_path = sys.argv[3]
 
     percentile_file = open(percentile_file_path, "r")
+
+    tmp_percentile = int(percentile_file.readline())
+    if tmp_percentile <= 0 or tmp_percentile > 100:
+        percentile_file.close()
+        print "Percentile value is invaild"
+        print "application ended " + str(dt.now())
+        exit()
+
     outfile = open(output_file_path, "w")
 
-    print "application started " + str(dt.now())
     read_input_file()
-#    print contrib_rec
-#    print recep_rec
+
     outfile.close()
     percentile_file.close()
     print "application ended " + str(dt.now())
