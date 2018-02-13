@@ -10,7 +10,7 @@ Below is the high level overview on how the application works.
 
 2) Validates input record according to the business requirements
 * Transaction Date is expected to be in YYYYMMDD format
-*  Donation Amount value is assumed to be a rounded integer (no precision point calculation)
+* Donation Amount value is assumed to be a decimal number with a maximum scale of 2
 
 3) Any invalid record will be ignored.
 

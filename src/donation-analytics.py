@@ -2,6 +2,8 @@ import sys
 import datetime
 import re
 import collections
+import decimal
+from decimal import Decimal
 from datetime import datetime as dt
 from collections import defaultdict
 
@@ -40,10 +42,13 @@ def parse_record_and_validate(line):
     tokens = line.split("|")
 
     chk_pattern = '[^a-zA-Z\ \,]'
-    if tokens[15] == '' and tokens[0].isalnum() and tokens[10].isdigit() and tokens[14].isdigit() and not(re.search(chk_pattern, tokens[7])):
+    if tokens[15] == '' and tokens[0].isalnum() and tokens[10].isdigit() and not(re.search(chk_pattern, tokens[7])):
         try:
             datetime.datetime.strptime(tokens[13], '%m%d%Y')
+            decimal.Decimal(tokens[14])
         except ValueError:
+            return {}
+        except decimal.InvalidOperation:
             return {}
 
         record["CMTE_ID"] = tokens[0]
@@ -58,7 +63,7 @@ def parse_record_and_validate(line):
 
 #Calculation of Donation Analytics
 def calc_donation_analytics(record):
-        Tmp_Donation = int(record["TRANSACTION_AMT"])
+        Tmp_Donation = decimal.Decimal(record["TRANSACTION_AMT"])
 
         Name_Zip = record["NAME"] + "|" + record["ZIPCODE"]
         Recep_Zip_Year = record["CMTE_ID"] + "|" + record["ZIPCODE"] + "|" + record["TRANSACTION_DATE"]
